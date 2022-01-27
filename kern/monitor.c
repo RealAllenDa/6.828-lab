@@ -66,14 +66,14 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
     uint32_t arg1, arg2, arg3, arg4, arg5;
     struct Eipdebuginfo info;
     cprintf("   %fesp %08x%r\n", YELLOW, esp);
-    uint32_t ebp = read_ebp();
+    uint32_t *ebp = (uintptr_t*) read_ebp();
     for ( ; ; ) {
-        arg1 = *(uintptr_t*)(ebp + 8);
-        arg2 = *(uintptr_t*)(ebp + 12);
-        arg3 = *(uintptr_t*)(ebp + 16);
-        arg4 = *(uintptr_t*)(ebp + 20);
-        arg5 = *(uintptr_t*)(ebp + 24);
-        return_address = *(uintptr_t*)(ebp + 4);
+        arg1 = *(ebp + 2);
+        arg2 = *(ebp + 3);
+        arg3 = *(ebp + 4);
+        arg4 = *(ebp + 5);
+        arg5 = *(ebp + 6);
+        return_address = *(ebp + 1);
         if (return_address == 0) {
             panic("EIP is zero");
         }
@@ -89,11 +89,12 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
         cprintf("       %s:%d:  %.*s+%d\n",
                 info.eip_file, info.eip_line, info.eip_fn_namelen, info.eip_fn_name,
                 rel_address);
-        ebp += 32;
+        ebp = (uintptr_t*) *ebp;
         if (strcmp(info.eip_file, "kern/entry.S") == 0) {
             break;
         }
     }
+    panic("Test");
 	return 0;
 }
 

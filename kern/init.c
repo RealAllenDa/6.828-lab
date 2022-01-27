@@ -69,7 +69,7 @@ _panic(const char *file, int line, const char *fmt,...)
 	asm volatile("cli; cld");
 
 	va_start(ap, fmt);
-	cprintf("%bkernel panic at %s:%d: ", PURPLE, file, line);
+	cprintf("%fkernel panic at %s:%d: ", PURPLE, file, line);
 	vcprintf(fmt, ap);
 	cprintf("%r\n");
     mon_backtrace(0, NULL, NULL);
@@ -88,7 +88,7 @@ _warn(const char *file, int line, const char *fmt,...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	cprintf("%bkernel warning at %s:%d: ", YELLOW, file, line);
+	cprintf("%fkernel warning at %s:%d: ", YELLOW, file, line);
 	vcprintf(fmt, ap);
 	cprintf("%r\n");
     mon_backtrace(0, NULL, NULL);

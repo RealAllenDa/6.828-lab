@@ -8,6 +8,8 @@
 
 #include <inc/types.h>
 
+#define COLOR_SERIAL 1
+
 #define MONO_BASE	0x3B4
 #define MONO_BUF	0xB0000
 #define CGA_BASE	0x3D4
