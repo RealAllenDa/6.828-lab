@@ -7,6 +7,7 @@
 #include <inc/assert.h>
 
 #include <kern/console.h>
+#include "inc/color.h"
 
 static void cons_intr(int (*proc)(void));
 static void cons_putc(int c);
@@ -308,6 +309,8 @@ static uint8_t *charcode[4] = {
 	ctlmap
 };
 
+static char* escape_sequence = "\033[";
+
 /*
  * Get data from the keyboard.  If we finish a character, return it.  Else 0.
  * Return -1 if no data.
@@ -432,7 +435,96 @@ cons_getc(void)
 static void
 cons_putc(int c)
 {
-	serial_putc(c);
+    // Like this:
+    //  1 1 1 1         1 1 1 1         1 1 1 1 1 1 1 1
+    //    BG            Foreground         Text
+    //  Lshift 12: Get BG
+    //  1111 0000 NOT + AND Original: Get Foreground
+    int background_color, foreground_color;
+    switch (c >> 12) {
+        case BLACK:
+            background_color = 40;
+            break;
+        case BLUE:
+            background_color = 44;
+            break;
+        case GREEN:
+            background_color = 42;
+            break;
+        case CYAN:
+            background_color = 46;
+            break;
+        case RED:
+            background_color = 41;
+            break;
+        case PURPLE:
+            background_color = 45;
+            break;
+        case YELLOW:
+            background_color = 43;
+            break;
+        case WHITE:
+            background_color = 47;
+            break;
+        default:
+            background_color = 40;
+    }
+    switch ((c >> 8) & ~(0xF << 4)) {
+        case BLACK:
+            foreground_color = 37;
+            break;
+        case BLUE:
+            foreground_color = 34;
+            break;
+        case GREEN:
+            foreground_color = 32;
+            break;
+        case CYAN:
+            foreground_color = 36;
+            break;
+        case RED:
+            foreground_color = 31;
+            break;
+        case PURPLE:
+            foreground_color = 35;
+            break;
+        case YELLOW:
+            foreground_color = 33;
+            break;
+        case WHITE:
+            foreground_color = 30;
+            break;
+        default:
+            // White
+            foreground_color = 37;
+    }
+    char bg_buffer[2], fg_buffer[2];
+    itoa(background_color, bg_buffer, 10);
+    itoa(foreground_color, fg_buffer, 10);
+    char *bg_pointer, *fg_pointer, *escape_pointer;
+    for (escape_pointer = escape_sequence; *escape_pointer != '\0'; escape_pointer++) {
+        serial_putc(*escape_pointer);
+    }
+    for (bg_pointer = bg_buffer; *bg_pointer != '\0'; bg_pointer++) {
+        serial_putc(*bg_pointer);
+    }
+    serial_putc(';');
+    for (fg_pointer = fg_buffer; *fg_pointer != '\0'; fg_pointer++) {
+        serial_putc(*fg_pointer);
+    }
+    serial_putc('m');
+
+
+    serial_putc(c);
+
+
+    for (escape_pointer = escape_sequence; *escape_pointer != '\0'; escape_pointer++) {
+        serial_putc(*escape_pointer);
+    }
+    serial_putc('0');
+    serial_putc('m');
+
+
 	lpt_putc(c);
 	cga_putc(c);
 }
@@ -451,11 +543,18 @@ cons_init(void)
 
 
 // `High'-level console I/O.  Used by readline and cprintf.
+int color[2] = {0, 0};
+
+void
+change_color(int position, int c)
+{
+    color[position] = c;
+}
 
 void
 cputchar(int c)
 {
-	cons_putc(c);
+	cons_putc(c | (color[0] << 8) | (color[1] << 12));
 }
 
 int

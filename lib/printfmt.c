@@ -103,11 +103,26 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		altflag = 0;
 	reswitch:
 		switch (ch = *(unsigned char *) fmt++) {
+            // flag to change foreground color
+            case 'f':
+                change_color(0, va_arg(ap, int));
+                break;
 
-		// flag to pad on the right
-		case '-':
-			padc = '-';
-			goto reswitch;
+                // flag to change background color
+            case 'b':
+                change_color(1, va_arg(ap, int));
+                break;
+
+                // flag to restore all color
+            case 'r':
+                change_color(0, 0);
+                change_color(1, 0);
+                break;
+
+                // flag to pad on the right
+            case '-':
+                padc = '-';
+                goto reswitch;
 
 		// flag to pad with 0's instead of spaces
 		case '0':

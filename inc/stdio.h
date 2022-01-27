@@ -9,6 +9,7 @@
 
 // lib/console.c
 void	cputchar(int c);
+void change_color(int position, int c);
 int	getchar(void);
 int	iscons(int fd);
 

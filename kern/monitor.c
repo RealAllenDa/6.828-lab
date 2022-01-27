@@ -10,6 +10,7 @@
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
+#include "inc/color.h"
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -23,7 +24,9 @@ struct Command {
 
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
-	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+    { "kerninfo", "Display information about the kernel", mon_kerninfo },
+    { "exit", "Quits the emulator", mon_quit },
+    { "backtrace", "Backtraces", mon_backtrace },
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -57,10 +60,49 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	// Your code here.
+    cprintf("%fStack backtrace:%r\n", CYAN);
+    uint32_t esp = read_esp();
+    uint32_t return_address, rel_address;
+    uint32_t arg1, arg2, arg3, arg4, arg5;
+    struct Eipdebuginfo info;
+    cprintf("   %fesp %08x%r\n", YELLOW, esp);
+    uint32_t ebp = read_ebp();
+    for ( ; ; ) {
+        arg1 = *(uintptr_t*)(ebp + 8);
+        arg2 = *(uintptr_t*)(ebp + 12);
+        arg3 = *(uintptr_t*)(ebp + 16);
+        arg4 = *(uintptr_t*)(ebp + 20);
+        arg5 = *(uintptr_t*)(ebp + 24);
+        return_address = *(uintptr_t*)(ebp + 4);
+        if (return_address == 0) {
+            panic("EIP is zero");
+        }
+        debuginfo_eip(return_address, &info);
+        rel_address = return_address - info.eip_fn_addr;
+        cprintf("   %febp %08x  %feip %08x  %fargs %08x %08x %08x %08x %08x%r\n",
+                RED,
+                ebp,
+                CYAN,
+                return_address,
+                YELLOW,
+                arg1, arg2, arg3, arg4, arg5);
+        cprintf("       %s:%d:  %.*s+%d\n",
+                info.eip_file, info.eip_line, info.eip_fn_namelen, info.eip_fn_name,
+                rel_address);
+        ebp += 32;
+        if (strcmp(info.eip_file, "kern/entry.S") == 0) {
+            break;
+        }
+    }
 	return 0;
 }
 
+int
+mon_quit(int argc, char **argv, struct Trapframe *tf)
+{
+    outw( 0x604, 0x0 | 0x2000 );
+    return 0;
+}
 
 
 /***** Kernel monitor command interpreter *****/

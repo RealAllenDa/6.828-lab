@@ -6,6 +6,8 @@
 
 #include <kern/monitor.h>
 #include <kern/console.h>
+#include "inc/color.h"
+#include "kdebug.h"
 
 // Test the stack backtrace function (lab 1 only)
 void
@@ -67,9 +69,10 @@ _panic(const char *file, int line, const char *fmt,...)
 	asm volatile("cli; cld");
 
 	va_start(ap, fmt);
-	cprintf("kernel panic at %s:%d: ", file, line);
+	cprintf("%bkernel panic at %s:%d: ", PURPLE, file, line);
 	vcprintf(fmt, ap);
-	cprintf("\n");
+	cprintf("%r\n");
+    mon_backtrace(0, NULL, NULL);
 	va_end(ap);
 
 dead:
@@ -85,8 +88,9 @@ _warn(const char *file, int line, const char *fmt,...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	cprintf("kernel warning at %s:%d: ", file, line);
+	cprintf("%bkernel warning at %s:%d: ", YELLOW, file, line);
 	vcprintf(fmt, ap);
-	cprintf("\n");
+	cprintf("%r\n");
+    mon_backtrace(0, NULL, NULL);
 	va_end(ap);
 }
