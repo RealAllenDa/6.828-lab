@@ -440,6 +440,7 @@ cons_putc(int c)
     //    BG            Foreground         Text
     //  Lshift 12: Get BG
     //  1111 0000 NOT + AND Original: Get Foreground
+#ifdef COLOR_SERIAL
     int background_color, foreground_color;
     switch (c >> 12) {
         case BLACK:
@@ -513,18 +514,15 @@ cons_putc(int c)
         serial_putc(*fg_pointer);
     }
     serial_putc('m');
-
-
+#endif
     serial_putc(c);
-
-
+#ifdef COLOR_SERIAL
     for (escape_pointer = escape_sequence; *escape_pointer != '\0'; escape_pointer++) {
         serial_putc(*escape_pointer);
     }
     serial_putc('0');
     serial_putc('m');
-
-
+#endif
 	lpt_putc(c);
 	cga_putc(c);
 }
